@@ -54,6 +54,7 @@ export * from './types/job';
 export * from './types/metricQuery';
 export * from './types/organization';
 export * from './types/organizationMemberProfile';
+export * from './types/personalAccessToken';
 export * from './types/savedCharts';
 export * from './types/table';
 export * from './types/user';
