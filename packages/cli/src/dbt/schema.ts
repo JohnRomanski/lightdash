@@ -2,7 +2,7 @@ import { lightdashDbtYamlSchema } from '@lightdash/common';
 import betterAjvErrors from 'better-ajv-errors';
 import { promises as fs } from 'fs';
 import * as yaml from 'js-yaml';
-import { ajv } from './ajv';
+import { ajv } from '../ajv';
 
 type YamlColumn = {
     name: string;

@@ -3,6 +3,7 @@ import { LightdashError } from '@lightdash/common';
 import { program } from 'commander';
 import * as os from 'os';
 import * as path from 'path';
+import { compileHandler } from './handlers/compile';
 import { dbtRunHandler } from './handlers/dbt/run';
 import { generateHandler } from './handlers/generate';
 import * as styles from './styles';
@@ -117,6 +118,23 @@ ${styles.bold('Examples:')}
     .option('--no-defer')
     .option('--full-refresh')
     .action(dbtRunHandler);
+
+program
+    .command('compile')
+    .description('Compile Lightdash resources')
+    .option('--project-dir <path>', 'The directory of the dbt project', '.')
+    .option(
+        '--profiles-dir <path>',
+        'The directory of the dbt profiles',
+        path.join(os.homedir(), '.dbt'),
+    )
+    .option(
+        '--profile <name>',
+        'The name of the profile to use (defaults to profile name in dbt_project.yml)',
+        undefined,
+    )
+    .option('--target <name>', 'target to use in profiles.yml file', undefined)
+    .action(compileHandler);
 
 program
     .command('generate')
