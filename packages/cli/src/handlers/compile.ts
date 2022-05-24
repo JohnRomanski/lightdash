@@ -52,11 +52,16 @@ export const compileHandler = async (options: GenerateHandlerOptions) => {
     console.log(`Compiled ${explores.length} explores`);
     const url = 'http://localhost:8080';
     const projectUuid = '3675b69e-8324-4110-bdca-059031aa8da3';
-    await fetch(`${url}/api/v1/project/${projectUuid}/explores`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            Cookie: 'connect.sid=s%3A0malJ0tAY9imAK6PBS4-TKCkMJMcl6NY.vGqKixvUL5jPXEKlJ2%2FxR325RiM6dhr5HU1jLsHMlSM',
+    const response = await fetch(
+        `${url}/api/v1/projects/${projectUuid}/explores`,
+        {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                Cookie: 'connect.sid=s%3A0malJ0tAY9imAK6PBS4-TKCkMJMcl6NY.vGqKixvUL5jPXEKlJ2%2FxR325RiM6dhr5HU1jLsHMlSM',
+            },
+            body: JSON.stringify(explores),
         },
-    });
+    );
+    console.log(response);
 };
