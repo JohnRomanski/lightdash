@@ -6,6 +6,7 @@ import {
     ParseError,
 } from '@lightdash/common';
 import { warehouseClientFromCredentials } from '@lightdash/warehouses';
+import fetch from 'node-fetch';
 import path from 'path';
 import { getDbtContext } from '../dbt/context';
 import { loadManifest } from '../dbt/manifest';
@@ -49,4 +50,13 @@ export const compileHandler = async (options: GenerateHandlerOptions) => {
         Object.values(manifest.metrics),
     );
     console.log(`Compiled ${explores.length} explores`);
+    const url = 'http://localhost:8080';
+    const projectUuid = '3675b69e-8324-4110-bdca-059031aa8da3';
+    await fetch(`${url}/api/v1/project/${projectUuid}/explores`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            Cookie: 'connect.sid=s%3A0malJ0tAY9imAK6PBS4-TKCkMJMcl6NY.vGqKixvUL5jPXEKlJ2%2FxR325RiM6dhr5HU1jLsHMlSM',
+        },
+    });
 };

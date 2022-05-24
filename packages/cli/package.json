@@ -20,6 +20,7 @@
         "execa": "^5",
         "inquirer": "^8.2.4",
         "js-yaml": "^4.1.0",
+        "node-fetch": "^3.2.4",
         "nunjucks": "^3.2.3",
         "ora": "5.4.1"
     },

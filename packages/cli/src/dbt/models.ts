@@ -152,7 +152,13 @@ export const getModelsFromManifest = (
         );
     }
     const adapterType = manifest.metadata.adapter_type;
-    return models.map((model) => normaliseModelDatabase(model, adapterType));
+    return models
+        .filter(
+            (model) =>
+                model.config?.materialized &&
+                model.config.materialized !== 'ephemeral',
+        )
+        .map((model) => normaliseModelDatabase(model, adapterType));
 };
 
 type MethodSelectorArgs = {
