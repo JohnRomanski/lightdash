@@ -15,6 +15,7 @@ import {
     loadDbtTarget,
     warehouseCredentialsFromDbtTarget,
 } from '../dbt/profile';
+import * as styles from '../styles';
 
 type GenerateHandlerOptions = {
     projectDir: string;
@@ -63,5 +64,18 @@ export const compileHandler = async (options: GenerateHandlerOptions) => {
             body: JSON.stringify(explores),
         },
     );
-    console.log(response);
+    if (response.status === 200) {
+        console.log('');
+        console.log(styles.success('Successfully compiled project'));
+        console.log('');
+        console.log(`${styles.bold('Preview your project:')}`);
+        console.log('');
+        console.log(
+            `      ${styles.bold(
+                '⚡️ http://localhost:3000/projects/3675b69e-8324-4110-bdca-059031aa8da3/tables',
+            )}`,
+        );
+        console.log('');
+        console.log('Done 🕶');
+    }
 };
