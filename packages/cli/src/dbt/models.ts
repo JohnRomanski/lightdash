@@ -3,6 +3,7 @@ import {
     DbtManifest,
     DbtRawModelNode,
     isSupportedDbtAdapter,
+    LightdashError,
     normaliseModelDatabase,
     ParseError,
     patchPathParts,
@@ -50,40 +51,58 @@ export const getWarehouseTableForModel = async ({
     return table;
 };
 
-type UpdatedModelYmlFileArgs = {
+type GenerateModelYamlArgs = {
     model: CompiledModel;
     table: WarehouseTableSchema;
 };
-export const updateModelYmlFile = async ({
+const generateModelYml = ({ model, table }: GenerateModelYamlArgs) => ({
+    name: model.name,
+    columns: Object.entries(table).map(([columnName]) => ({
+        name: columnName,
+        description: '',
+    })),
+});
+
+class ExistingModelNotFoundError extends LightdashError {
+    constructor(message: string) {
+        super({
+            message,
+            name: 'EXISTING_MODEL_NOT_FOUND',
+            statusCode: 404,
+            data: {},
+        });
+    }
+}
+
+type MergeModelYamlArgs = {
+    model: CompiledModel & { patchPath: string };
+    table: WarehouseTableSchema;
+};
+const mergeModelYaml = async ({
     model,
     table,
-}: UpdatedModelYmlFileArgs): Promise<{
+}: MergeModelYamlArgs): Promise<{
     updatedYml: YamlSchema;
     outputFilePath: string;
 }> => {
-    const generatedModel = {
-        name: model.name,
-        columns: Object.entries(table).map(([columnName]) => ({
-            name: columnName,
-            description: '',
-        })),
-    };
-    if (model.patchPath) {
-        const { path: yamlSubpath } = patchPathParts(model.patchPath);
-        const outputFilePath = path.join(model.rootPath, yamlSubpath);
-        const existingYml = await loadYamlSchema(outputFilePath);
+    const { path: yamlSubpath } = patchPathParts(model.patchPath);
+    const existingYamlPath = path.join(model.rootPath, yamlSubpath);
+    let existingYml: YamlSchema;
+    try {
+        existingYml = await loadYamlSchema(existingYamlPath);
         const models = existingYml.models || [];
         const existingModelIndex = models.findIndex(
             (m) => m.name === model.name,
         );
         if (existingModelIndex === -1) {
-            throw new ParseError(
-                `Expected to find model ${model.name} in ${outputFilePath} but couldn't find it`,
+            throw new ExistingModelNotFoundError(
+                `Expected to find model ${model.name} in ${existingYamlPath} but couldn't find it`,
             );
         }
         const existingModel = models[existingModelIndex];
         const existingColumns = existingModel.columns || [];
         const existingColumnNames = existingColumns.map((c) => c.name);
+        const generatedModel = generateModelYml({ model, table });
         const newColumns = generatedModel.columns.filter(
             (c) => !existingColumnNames.includes(c.name),
         );
@@ -101,13 +120,42 @@ export const updateModelYmlFile = async ({
         };
         return {
             updatedYml,
-            outputFilePath,
+            outputFilePath: existingYamlPath,
         };
+    } catch (e) {
+        if (e.code === 'ENOENT') {
+            throw new ExistingModelNotFoundError(
+                `Expected to find yaml file for model "${model.name}" at "${existingYamlPath}" but it doesn't exist. Do you need to run dbt compile?`,
+            );
+        }
+        throw e;
+    }
+};
+export const updateModelYmlFile = async ({
+    model,
+    table,
+}: GenerateModelYamlArgs): Promise<{
+    updatedYml: YamlSchema;
+    outputFilePath: string;
+}> => {
+    const { patchPath } = model;
+    if (patchPath) {
+        try {
+            return await mergeModelYaml({
+                model: { ...model, patchPath },
+                table,
+            });
+        } catch (e) {
+            if (!(e instanceof ExistingModelNotFoundError)) {
+                throw e;
+            }
+        }
     }
     const outputDir = path.dirname(
         path.join(model.rootPath, model.originalFilePath),
     );
     const outputFilePath = path.join(outputDir, `${model.name}.yml`);
+    const generatedModel = generateModelYml({ model, table });
     const updatedYml = {
         version: 2 as const,
         models: [generatedModel],
